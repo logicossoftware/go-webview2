@@ -1,6 +1,6 @@
 module github.com/logicossoftware/go-webview2
 
-go 1.16
+go 1.25
 
 require (
 	github.com/logicossoftware/go-webview2 v0.0.0-20250406165304-0bcfea011047
