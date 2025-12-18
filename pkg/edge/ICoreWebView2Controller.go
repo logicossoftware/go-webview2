@@ -39,7 +39,7 @@ type ICoreWebView2Controller struct {
 }
 
 func (i *ICoreWebView2Controller) AddRef() uintptr {
-	r, _, _ := i.vtbl.AddRef.Call()
+	r, _, _ := i.vtbl.AddRef.Call(uintptr(unsafe.Pointer(i)))
 	return r
 }
 
@@ -74,7 +74,7 @@ func (i *ICoreWebView2Controller) AddAcceleratorKeyPressed(eventHandler *ICoreWe
 	_, _, err = i.vtbl.AddAcceleratorKeyPressed.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(unsafe.Pointer(eventHandler)),
-		uintptr(unsafe.Pointer(&token)),
+		uintptr(unsafe.Pointer(token)),
 	)
 	if err != windows.ERROR_SUCCESS {
 		return err
@@ -93,6 +93,204 @@ func (i *ICoreWebView2Controller) PutIsVisible(isVisible bool) error {
 		return err
 	}
 	return nil
+}
+
+func (i *ICoreWebView2Controller) GetIsVisible() (bool, error) {
+	var visible bool
+	_, _, err := i.vtbl.GetIsVisible.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&visible)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return visible, nil
+}
+
+func (i *ICoreWebView2Controller) GetZoomFactor() (float64, error) {
+	var zoom float64
+	_, _, err := i.vtbl.GetZoomFactor.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&zoom)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return 0, err
+	}
+	return zoom, nil
+}
+
+func (i *ICoreWebView2Controller) PutZoomFactor(zoomFactor float64) error {
+	_, _, err := i.vtbl.PutZoomFactor.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&zoomFactor)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+// AddZoomFactorChangedRaw registers a zoom-factor-changed handler.
+// handler must be a COM object pointer implementing the expected WebView2 handler interface.
+func (i *ICoreWebView2Controller) AddZoomFactorChangedRaw(handler uintptr, token *_EventRegistrationToken) error {
+	_, _, err := i.vtbl.AddZoomFactorChanged.Call(
+		uintptr(unsafe.Pointer(i)),
+		handler,
+		uintptr(unsafe.Pointer(token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) RemoveZoomFactorChanged(token _EventRegistrationToken) error {
+	_, _, err := i.vtbl.RemoveZoomFactorChanged.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) SetBoundsAndZoomFactor(bounds w32.Rect, zoomFactor float64) error {
+	_, _, err := i.vtbl.SetBoundsAndZoomFactor.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&bounds)),
+		uintptr(unsafe.Pointer(&zoomFactor)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+// AddMoveFocusRequestedRaw registers a move-focus-requested handler.
+func (i *ICoreWebView2Controller) AddMoveFocusRequestedRaw(handler uintptr, token *_EventRegistrationToken) error {
+	_, _, err := i.vtbl.AddMoveFocusRequested.Call(
+		uintptr(unsafe.Pointer(i)),
+		handler,
+		uintptr(unsafe.Pointer(token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) RemoveMoveFocusRequested(token _EventRegistrationToken) error {
+	_, _, err := i.vtbl.RemoveMoveFocusRequested.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+// AddGotFocusRaw registers a got-focus handler.
+func (i *ICoreWebView2Controller) AddGotFocusRaw(handler uintptr, token *_EventRegistrationToken) error {
+	_, _, err := i.vtbl.AddGotFocus.Call(
+		uintptr(unsafe.Pointer(i)),
+		handler,
+		uintptr(unsafe.Pointer(token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) RemoveGotFocus(token _EventRegistrationToken) error {
+	_, _, err := i.vtbl.RemoveGotFocus.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+// AddLostFocusRaw registers a lost-focus handler.
+func (i *ICoreWebView2Controller) AddLostFocusRaw(handler uintptr, token *_EventRegistrationToken) error {
+	_, _, err := i.vtbl.AddLostFocus.Call(
+		uintptr(unsafe.Pointer(i)),
+		handler,
+		uintptr(unsafe.Pointer(token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) RemoveLostFocus(token _EventRegistrationToken) error {
+	_, _, err := i.vtbl.RemoveLostFocus.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) RemoveAcceleratorKeyPressed(token _EventRegistrationToken) error {
+	_, _, err := i.vtbl.RemoveAcceleratorKeyPressed.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&token)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) GetParentWindow() (uintptr, error) {
+	var hwnd uintptr
+	_, _, err := i.vtbl.GetParentWindow.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&hwnd)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return 0, err
+	}
+	return hwnd, nil
+}
+
+func (i *ICoreWebView2Controller) PutParentWindow(hwnd uintptr) error {
+	_, _, err := i.vtbl.PutParentWindow.Call(
+		uintptr(unsafe.Pointer(i)),
+		hwnd,
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) Close() error {
+	_, _, err := i.vtbl.Close.Call(uintptr(unsafe.Pointer(i)))
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) GetCoreWebView2() (*ICoreWebView2, error) {
+	var wv *ICoreWebView2
+	_, _, err := i.vtbl.GetCoreWebView2.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&wv)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return nil, err
+	}
+	return wv, nil
 }
 
 func (i *ICoreWebView2Controller) GetICoreWebView2Controller2() *ICoreWebView2Controller2 {

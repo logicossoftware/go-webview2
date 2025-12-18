@@ -20,7 +20,7 @@ type ICoreWebView2WebResourceRequestedEventArgs struct {
 }
 
 func (i *ICoreWebView2WebResourceRequestedEventArgs) AddRef() uintptr {
-	r, _, _ := i.vtbl.AddRef.Call()
+	r, _, _ := i.vtbl.AddRef.Call(uintptr(unsafe.Pointer(i)))
 	return r
 }
 
@@ -48,4 +48,42 @@ func (i *ICoreWebView2WebResourceRequestedEventArgs) GetRequest() (*ICoreWebView
 		return nil, err
 	}
 	return request, nil
+}
+
+func (i *ICoreWebView2WebResourceRequestedEventArgs) GetResponse() (*ICoreWebView2WebResourceResponse, error) {
+	var response *ICoreWebView2WebResourceResponse
+	_, _, err := i.vtbl.GetResponse.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&response)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return nil, err
+	}
+	return response, nil
+}
+
+// GetDeferral returns the underlying ICoreWebView2Deferral*.
+// The concrete type is not wrapped here; use COM directly if needed.
+func (i *ICoreWebView2WebResourceRequestedEventArgs) GetDeferral() (uintptr, error) {
+	var deferral uintptr
+	_, _, err := i.vtbl.GetDeferral.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&deferral)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return 0, err
+	}
+	return deferral, nil
+}
+
+func (i *ICoreWebView2WebResourceRequestedEventArgs) GetResourceContext() (COREWEBVIEW2_WEB_RESOURCE_CONTEXT, error) {
+	var ctx COREWEBVIEW2_WEB_RESOURCE_CONTEXT
+	_, _, err := i.vtbl.GetResourceContext.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&ctx)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return 0, err
+	}
+	return ctx, nil
 }

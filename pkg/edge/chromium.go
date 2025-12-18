@@ -27,6 +27,7 @@ type Chromium struct {
 	webResourceRequested  *iCoreWebView2WebResourceRequestedEventHandler
 	acceleratorKeyPressed *ICoreWebView2AcceleratorKeyPressedEventHandler
 	navigationCompleted   *ICoreWebView2NavigationCompletedEventHandler
+	downloadStarting      *iCoreWebView2DownloadStartingEventHandler
 
 	environment *ICoreWebView2Environment
 
@@ -42,6 +43,7 @@ type Chromium struct {
 	WebResourceRequestedCallback func(request *ICoreWebView2WebResourceRequest, args *ICoreWebView2WebResourceRequestedEventArgs)
 	NavigationCompletedCallback  func(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs)
 	AcceleratorKeyCallback       func(uint) bool
+	DownloadStartingCallback     func(sender *ICoreWebView2, args *ICoreWebView2DownloadStartingEventArgs)
 }
 
 func NewChromium() *Chromium {
@@ -64,6 +66,7 @@ func NewChromium() *Chromium {
 	e.webResourceRequested = newICoreWebView2WebResourceRequestedEventHandler(e)
 	e.acceleratorKeyPressed = newICoreWebView2AcceleratorKeyPressedEventHandler(e)
 	e.navigationCompleted = newICoreWebView2NavigationCompletedEventHandler(e)
+	e.downloadStarting = newICoreWebView2DownloadStartingEventHandler(e)
 	e.permissions = make(map[CoreWebView2PermissionKind]CoreWebView2PermissionState)
 
 	return e
@@ -114,38 +117,27 @@ func (e *Chromium) Embed(hwnd uintptr) bool {
 }
 
 func (e *Chromium) Navigate(url string) {
-	_, _, _ = e.webview.vtbl.Navigate.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(url))),
-	)
+	if err := e.webview.Navigate(url); err != nil {
+		log.Printf("WebView2 Navigate failed: %v", err)
+	}
 }
 
 func (e *Chromium) NavigateToString(htmlContent string) {
-	_, _, _ = e.webview.vtbl.NavigateToString.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(htmlContent))),
-	)
+	if err := e.webview.NavigateToString(htmlContent); err != nil {
+		log.Printf("WebView2 NavigateToString failed: %v", err)
+	}
 }
 
 func (e *Chromium) Init(script string) {
-	_, _, _ = e.webview.vtbl.AddScriptToExecuteOnDocumentCreated.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(windows.StringToUTF16Ptr(script))),
-		0,
-	)
+	if err := e.webview.AddScriptToExecuteOnDocumentCreated(script); err != nil {
+		log.Printf("WebView2 AddScriptToExecuteOnDocumentCreated failed: %v", err)
+	}
 }
 
 func (e *Chromium) Eval(script string) {
-	_script, err := windows.UTF16PtrFromString(script)
-	if err != nil {
-		log.Fatal(err)
+	if err := e.webview.ExecuteScript(script); err != nil {
+		log.Printf("WebView2 ExecuteScript failed: %v", err)
 	}
-
-	_, _, _ = e.webview.vtbl.ExecuteScript.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(_script)),
-		0,
-	)
 }
 
 func (e *Chromium) Show() error {
@@ -198,26 +190,23 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 	_, _, _ = e.webview.vtbl.AddRef.Call(
 		uintptr(unsafe.Pointer(e.webview)),
 	)
-	_, _, _ = e.webview.vtbl.AddWebMessageReceived.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(e.webMessageReceived)),
-		uintptr(unsafe.Pointer(&token)),
-	)
-	_, _, _ = e.webview.vtbl.AddPermissionRequested.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(e.permissionRequested)),
-		uintptr(unsafe.Pointer(&token)),
-	)
-	_, _, _ = e.webview.vtbl.AddWebResourceRequested.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(e.webResourceRequested)),
-		uintptr(unsafe.Pointer(&token)),
-	)
-	_, _, _ = e.webview.vtbl.AddNavigationCompleted.Call(
-		uintptr(unsafe.Pointer(e.webview)),
-		uintptr(unsafe.Pointer(e.navigationCompleted)),
-		uintptr(unsafe.Pointer(&token)),
-	)
+	if err := e.webview.AddWebMessageReceived(e.webMessageReceived, &token); err != nil {
+		log.Printf("WebView2 AddWebMessageReceived failed: %v", err)
+	}
+	if err := e.webview.AddPermissionRequested(e.permissionRequested, &token); err != nil {
+		log.Printf("WebView2 AddPermissionRequested failed: %v", err)
+	}
+	if err := e.webview.AddWebResourceRequested(e.webResourceRequested, &token); err != nil {
+		log.Printf("WebView2 AddWebResourceRequested failed: %v", err)
+	}
+	if err := e.webview.AddNavigationCompleted(e.navigationCompleted, &token); err != nil {
+		log.Printf("WebView2 AddNavigationCompleted failed: %v", err)
+	}
+	if wv4 := e.webview.GetICoreWebView2_4(); wv4 != nil {
+		if err := wv4.AddDownloadStartingRaw(uintptr(unsafe.Pointer(e.downloadStarting)), &token); err != nil {
+			log.Printf("WebView2 AddDownloadStarting failed: %v", err)
+		}
+	}
 
 	_ = e.controller.AddAcceleratorKeyPressed(e.acceleratorKeyPressed, &token)
 
@@ -231,19 +220,15 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 }
 
 func (e *Chromium) MessageReceived(sender *ICoreWebView2, args *iCoreWebView2WebMessageReceivedEventArgs) uintptr {
-	var message *uint16
-	_, _, _ = args.vtbl.TryGetWebMessageAsString.Call(
-		uintptr(unsafe.Pointer(args)),
-		uintptr(unsafe.Pointer(&message)),
-	)
-	if e.MessageCallback != nil {
-		e.MessageCallback(w32.Utf16PtrToString(message))
+	message, err := args.TryGetWebMessageAsString()
+	if err != nil {
+		log.Printf("WebView2 TryGetWebMessageAsString failed: %v", err)
+		return 0
 	}
-	_, _, _ = sender.vtbl.PostWebMessageAsString.Call(
-		uintptr(unsafe.Pointer(sender)),
-		uintptr(unsafe.Pointer(message)),
-	)
-	windows.CoTaskMemFree(unsafe.Pointer(message))
+	if e.MessageCallback != nil {
+		e.MessageCallback(message)
+	}
+	_ = sender.PostWebMessageAsString(message)
 	return 0
 }
 
@@ -256,11 +241,11 @@ func (e *Chromium) SetGlobalPermission(state CoreWebView2PermissionState) {
 }
 
 func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2PermissionRequestedEventArgs) uintptr {
-	var kind CoreWebView2PermissionKind
-	_, _, _ = args.vtbl.GetPermissionKind.Call(
-		uintptr(unsafe.Pointer(args)),
-		uintptr(kind),
-	)
+	kind, err := args.GetPermissionKind()
+	if err != nil {
+		log.Printf("WebView2 GetPermissionKind failed: %v", err)
+		return 0
+	}
 	var result CoreWebView2PermissionState
 	if e.globalPermission != nil {
 		result = *e.globalPermission
@@ -271,10 +256,7 @@ func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2Perm
 			result = CoreWebView2PermissionStateDefault
 		}
 	}
-	_, _, _ = args.vtbl.PutState.Call(
-		uintptr(unsafe.Pointer(args)),
-		uintptr(result),
-	)
+	_ = args.PutState(result)
 	return 0
 }
 
@@ -339,6 +321,13 @@ func boolToInt(input bool) int {
 func (e *Chromium) NavigationCompleted(sender *ICoreWebView2, args *ICoreWebView2NavigationCompletedEventArgs) uintptr {
 	if e.NavigationCompletedCallback != nil {
 		e.NavigationCompletedCallback(sender, args)
+	}
+	return 0
+}
+
+func (e *Chromium) DownloadStarting(sender *ICoreWebView2, args *ICoreWebView2DownloadStartingEventArgs) uintptr {
+	if e.DownloadStartingCallback != nil {
+		e.DownloadStartingCallback(sender, args)
 	}
 	return 0
 }

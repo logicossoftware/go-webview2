@@ -47,7 +47,7 @@ type ICoreWebViewSettings struct {
 }
 
 func (i *ICoreWebViewSettings) AddRef() uintptr {
-	r, _, _ := i.vtbl.AddRef.Call()
+	r, _, _ := i.vtbl.AddRef.Call(uintptr(unsafe.Pointer(i)))
 	return r
 }
 
@@ -289,7 +289,7 @@ func (i *ICoreWebViewSettings) GetUserAgent() (string, error) {
 	var _userAgent *uint16
 	_, _, err = i.vtbl.GetUserAgent.Call(
 		uintptr(unsafe.Pointer(i)),
-		uintptr(unsafe.Pointer(_userAgent)),
+		uintptr(unsafe.Pointer(&_userAgent)),
 	)
 	if err != windows.ERROR_SUCCESS {
 		return "", err
@@ -334,6 +334,52 @@ func (i *ICoreWebViewSettings) PutAreBrowserAcceleratorKeysEnabled(enabled bool)
 	var err error
 
 	_, _, err = i.vtbl.PutAreBrowserAcceleratorKeysEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(boolToInt(enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebViewSettings) GetIsPasswordAutosaveEnabled() (bool, error) {
+	var enabled bool
+	_, _, err := i.vtbl.GetIsPasswordAutosaveEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (i *ICoreWebViewSettings) PutIsPasswordAutosaveEnabled(enabled bool) error {
+	_, _, err := i.vtbl.PutIsPasswordAutosaveEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(boolToInt(enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return err
+	}
+	return nil
+}
+
+func (i *ICoreWebViewSettings) GetIsGeneralAutofillEnabled() (bool, error) {
+	var enabled bool
+	_, _, err := i.vtbl.GetIsGeneralAutofillEnabled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&enabled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return enabled, nil
+}
+
+func (i *ICoreWebViewSettings) PutIsGeneralAutofillEnabled(enabled bool) error {
+	_, _, err := i.vtbl.PutIsGeneralAutofillEnabled.Call(
 		uintptr(unsafe.Pointer(i)),
 		uintptr(boolToInt(enabled)),
 	)

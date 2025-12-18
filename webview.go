@@ -81,6 +81,11 @@ type WebViewOptions struct {
 	// WindowOptions customizes the window that is created to embed the
 	// WebView2 widget.
 	WindowOptions WindowOptions
+
+	// DownloadStartingCallback is invoked when WebView2 starts a download.
+	// The args object lets you cancel the download, mark it handled (to hide
+	// the default download UI), and change the result file path.
+	DownloadStartingCallback func(sender *edge.ICoreWebView2, args *edge.ICoreWebView2DownloadStartingEventArgs)
 }
 
 // New creates a new webview in a new window.
@@ -103,6 +108,7 @@ func NewWithOptions(options WebViewOptions) WebView {
 	chromium.MessageCallback = w.msgcb
 	chromium.DataPath = options.DataPath
 	chromium.SetPermission(edge.CoreWebView2PermissionKindClipboardRead, edge.CoreWebView2PermissionStateAllow)
+	chromium.DownloadStartingCallback = options.DownloadStartingCallback
 
 	w.browser = chromium
 	w.mainthread, _, _ = w32.Kernel32GetCurrentThreadID.Call()

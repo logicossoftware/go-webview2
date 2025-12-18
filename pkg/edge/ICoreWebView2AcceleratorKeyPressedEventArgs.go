@@ -21,7 +21,7 @@ type ICoreWebView2AcceleratorKeyPressedEventArgs struct {
 }
 
 func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) AddRef() uintptr {
-	r, _, _ := i.vtbl.AddRef.Call()
+	r, _, _ := i.vtbl.AddRef.Call(uintptr(unsafe.Pointer(i)))
 	return r
 }
 
@@ -51,6 +51,18 @@ func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetVirtualKey() (uint, err
 	return virtualKey, nil
 }
 
+func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetKeyEventLParam() (int32, error) {
+	var lparam int32
+	_, _, err := i.vtbl.GetKeyEventLParam.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&lparam)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return 0, err
+	}
+	return lparam, nil
+}
+
 func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetPhysicalKeyStatus() (COREWEBVIEW2_PHYSICAL_KEY_STATUS, error) {
 	var err error
 	var physicalKeyStatus COREWEBVIEW2_PHYSICAL_KEY_STATUS
@@ -75,4 +87,16 @@ func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) PutHandled(handled bool) e
 		return err
 	}
 	return nil
+}
+
+func (i *ICoreWebView2AcceleratorKeyPressedEventArgs) GetHandled() (bool, error) {
+	var handled bool
+	_, _, err := i.vtbl.GetHandled.Call(
+		uintptr(unsafe.Pointer(i)),
+		uintptr(unsafe.Pointer(&handled)),
+	)
+	if err != windows.ERROR_SUCCESS {
+		return false, err
+	}
+	return handled, nil
 }

@@ -1,0 +1,3 @@
+package edge
+
+type COREWEBVIEW2_CAPTURE_PREVIEW_IMAGE_FORMAT uint32
