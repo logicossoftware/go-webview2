@@ -348,3 +348,23 @@ func (e *Chromium) Focus() {
 	}
 	_ = e.controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC)
 }
+
+// SetVirtualHostNameToFolderMapping sets a mapping between a virtual host name
+// and a folder path to make available to web content via that host name.
+func (e *Chromium) SetVirtualHostNameToFolderMapping(hostName, folderPath string, accessKind COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND) error {
+	wv3 := e.webview.GetICoreWebView2_3()
+	if wv3 == nil {
+		return nil // Interface not available on older WebView2 versions
+	}
+	return wv3.SetVirtualHostNameToFolderMapping(hostName, folderPath, accessKind)
+}
+
+// ClearVirtualHostNameToFolderMapping clears a virtual host name mapping
+// previously set with SetVirtualHostNameToFolderMapping.
+func (e *Chromium) ClearVirtualHostNameToFolderMapping(hostName string) error {
+	wv3 := e.webview.GetICoreWebView2_3()
+	if wv3 == nil {
+		return nil // Interface not available on older WebView2 versions
+	}
+	return wv3.ClearVirtualHostNameToFolderMapping(hostName)
+}

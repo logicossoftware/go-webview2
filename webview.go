@@ -486,3 +486,19 @@ func (w *webview) Bind(name string, f interface{}) error {
 
 	return nil
 }
+
+func (w *webview) SetVirtualHostNameToFolderMapping(hostName, folderPath string, accessKind HostResourceAccessKind) error {
+	chromium, ok := w.browser.(*edge.Chromium)
+	if !ok {
+		return errors.New("browser is not a Chromium instance")
+	}
+	return chromium.SetVirtualHostNameToFolderMapping(hostName, folderPath, accessKind)
+}
+
+func (w *webview) ClearVirtualHostNameToFolderMapping(hostName string) error {
+	chromium, ok := w.browser.(*edge.Chromium)
+	if !ok {
+		return errors.New("browser is not a Chromium instance")
+	}
+	return chromium.ClearVirtualHostNameToFolderMapping(hostName)
+}

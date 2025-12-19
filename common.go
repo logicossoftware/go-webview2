@@ -1,9 +1,26 @@
 package webview2
 
-import "unsafe"
+import (
+	"unsafe"
+
+	"github.com/logicossoftware/go-webview2/pkg/edge"
+)
 
 // This is copied from webview/webview.
 // The documentation is included for convenience.
+
+// HostResourceAccessKind specifies the kind of cross-origin resource access
+// allowed for a virtual host name mapping.
+type HostResourceAccessKind = edge.COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND
+
+const (
+	// HostResourceAccessKindDeny denies all cross-origin resource access.
+	HostResourceAccessKindDeny HostResourceAccessKind = edge.COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_DENY
+	// HostResourceAccessKindAllow allows all cross-origin resource access.
+	HostResourceAccessKindAllow HostResourceAccessKind = edge.COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_ALLOW
+	// HostResourceAccessKindDenyCors denies CORS but allows other cross-origin resource access.
+	HostResourceAccessKindDenyCors HostResourceAccessKind = edge.COREWEBVIEW2_HOST_RESOURCE_ACCESS_KIND_DENY_CORS
+)
 
 // Hint is used to configure window sizing and resizing behavior.
 type Hint int
@@ -81,4 +98,15 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// SetVirtualHostNameToFolderMapping sets a mapping between a virtual host name
+	// and a folder path to make available to web content via that host name.
+	// For example, mapping "assets.example" to "C:\app\assets" allows the web page
+	// to load resources using "https://assets.example/..."
+	// The accessKind parameter controls CORS behavior for the virtual host.
+	SetVirtualHostNameToFolderMapping(hostName, folderPath string, accessKind HostResourceAccessKind) error
+
+	// ClearVirtualHostNameToFolderMapping clears a virtual host name mapping
+	// previously set with SetVirtualHostNameToFolderMapping.
+	ClearVirtualHostNameToFolderMapping(hostName string) error
 }
